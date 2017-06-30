@@ -1,0 +1,14 @@
+---
+title: "Week 5 Updates"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Here's what we've done on our projects so far.
+
+## Shoeprints
+
+## Steganography
