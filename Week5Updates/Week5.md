@@ -19,22 +19,81 @@ After being given both videos and files to review, we were tasked to put togethe
 
 On the 27th, we learned the program to code grayscale and crop images using RStudio after the files are downloaded from GitHub. Each of the images from the 8 sets were put through this code and saved. On the 28th, we cleaned up the code mentioned above by condensing it into a function. At this point in time, you can enter in the raw image, run the function, and end with a cropped/gray scale shoe print. Please see the finished code below for specifics.
 
-``` r
+Running these lines will pull the devtools package from github and sets up the R Studio system to retrieve the shoe files for analysis.
+
+    install.packages("devtools")
+    devtools::install_github("gbasulto/solefinder")
+    library(purrr)
+    library(tidyr)
+    library(EBImage)
+    library(solefinder)
+    library(dplyr)
+
+This line allows us to type in "filename" and a number instead of the actual name of the file. This line also organizes the tiff files alphabetically starting with "Andrew1\_left\_1.tiff".
+
+    filenames <- list.files(pattern = "tiff")
+
+This is the GrayCrop2 function that will alter the raw image into a grayscale, cropped, and negative image. Code chunk "img &lt;- readImage(x)" names an image "x" "img" for the next alteration step. Code chunk "img &lt;- channel(img, mode = "grey")" converts the image into grayscale. Code chunk "img &lt;- max(img) - img" converts the image into a negative image and removing the "\#\#\#" from code chunk "\#\#\#display( img\_neg )" will display this image. Code chunk" img\_crop=img\[160:1800, 200:4400\]" crops the image to remove the borders. Removing the "\#\#\#" from code chunk "\#\#\#display(img\_crop, method = "raster")" and eliminating "img\_crop" will display the final altered image.
+
     GrayCrop2 <- function(x){
       img <- readImage(x) 
       img <- channel(img, mode = "grey") 
+      img <- max(img) - img
+      ###display( img_neg )
       img_crop=img[160:1800, 200:4400]
       ###display(img_crop, method = "raster")
       img_crop
     }
 
-    GrayCrop2("Jim2_right_1.tiff")
+This will compute the Hu moments for a single file.
 
-    compute_moments(GrayCrop2("Jim2_right_1.tiff"))
+    compute_moments(GrayCrop2(filenames[3]))
 
-    filenames <- list.files(pattern="tiff")
-    filenames[x]
-```
+This is the console readout for a single image that had been subjected to the code above.
+
+    > compute_moments(GrayCrop2(filenames[3]))
+    [1] 0.969507128 0.594752685 0.103012781 0.107731366 0.011337114 0.081817373
+    [7] 0.008688779 0.007222278
+
+This is the Hu function that computes the 8 Hu moments for any file or files we specify. Code chunk "out &lt;- compute\_moments(GrayCrop2(filenames\[x\]))" names the compute moments function "out" after an image goes through the GrayCrop2 function. Code chunk "data\_frame(shoe = filenames\[x\]," pulls the data from the shoe folder that we store the prints in. Code chunk "Hu1 = out\[1\], Hu2 = out\[2\], Hu3 = out\[3\], Hu4 = out\[4\], Hu5 = out\[5\], Hu6 = out\[6\], Hu7 = out\[7\], Hu8 = out\[8\])" sets the output as the 8 Hu moments. Code chunk "d &lt;- map\_df(1:48, Hu)" saves all of the Hu moments for the 48 shoe files into a database.
+
+    Hu<- function(x) {
+      out <- compute_moments(GrayCrop2(filenames[x]))
+      data_frame(shoe = filenames[x],
+                 Hu1 = out[1], Hu2 = out[2], Hu3 = out[3], Hu4 = out[4],
+                 Hu5 = out[5], Hu6 = out[6], Hu7 = out[7], Hu8 = out[8])
+    }
+
+    d <- map_df(1:48, Hu)
+
+This line tidies the table and organizes the shoes by side, id, and which scan it is.
+
+    shoeprints <- 
+      d %>%
+      mutate(shoe = gsub(".tiff", "", shoe)) %>%
+      separate(shoe, c("id", "side", "rep"), sep = "_")
+
+This is the head of the shoeprints data set after being tidyed.
+
+    > head(shoeprints)
+           id  side rep       Hu1       Hu2        Hu3        Hu4         Hu5        Hu6
+    1 Andrew1  left   1 0.9839185 0.6127382 0.10087957 0.10479915 0.010775211 0.08025148
+    2 Andrew1  left   2 0.9922167 0.6454597 0.04756689 0.04170379 0.001857218 0.03235382
+    3 Andrew1  left   3 0.9695071 0.5947527 0.10301278 0.10773137 0.011337114 0.08181737
+    4 Andrew1 right   1 0.9896718 0.6210294 0.07609011 0.07631862 0.005774333 0.05894313
+    5 Andrew1 right   2 0.9063717 0.5127025 0.04711124 0.04815755 0.002274318 0.03384983
+    6 Andrew1 right   3 0.9273094 0.5297408 0.07389964 0.07629144 0.005710214 0.05422747
+               Hu7          Hu8
+    1  0.008300279  0.008504707
+    2  0.001537663  0.004353666
+    3  0.008688779  0.007222278
+    4 -0.004813498 -0.005977293
+    5 -0.001554405 -0.003287214
+    6 -0.004232865 -0.005972354
+
+For images and a presentation on the work from the past 2 weeks, please see the Prezi linked in the url below:
+
+<https://prezi.com/p/xwjtd0_mxzvg/>
 
 After presenting on Hu Moments on the 29th, we continued to develop the code that is present in the attached presentation. Our end product for the day was the breakdown of each file and the cleaning up of the data.
 
